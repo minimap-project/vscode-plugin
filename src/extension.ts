@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import { PNG } from 'pngjs';
 
-const ENDPOINT = 'http://98.85.228.131:8000/api/v1/analyze/image';
+const ENDPOINT = 'http://localhost:8000/api/v1/analyze/image';
 const API_KEY = 'm1n1m4p-pesquisa-2025';
 
 const IMAGE_WIDTH = 128;
@@ -304,27 +304,30 @@ function createMd5Hash(value: string): string {
 function convertCharacterToPixelIntensity(character: string): number {
     const ascii = character.charCodeAt(0);
 
-    if (ascii >= 0 && ascii <= 32) {
+    // Caracteres de controle (newline, tab, etc.) → preto
+    if (ascii < 32) {
         return 0;
     }
 
+    // Dígitos → cinza fixo 53
     if (ascii >= 48 && ascii <= 57) {
         return 53;
     }
 
+    // Letras maiúsculas → cinza fixo 77
     if (ascii >= 65 && ascii <= 90) {
         return 77;
     }
 
+    // Letras minúsculas → cinza fixo 109
     if (ascii >= 97 && ascii <= 122) {
         return 109;
     }
 
-    if (ascii >= 122 && ascii <= 127) {
-        return ascii;
-    }
-
-    return 127;
+    // Todo o resto (espaço=32, pontuação, símbolos) → valor ASCII cru
+    // Isso inclui: espaço(32), !(33), "(34), .(46), ;(59), {(123), }(125)...
+    // É assim que o dataset de treino foi gerado.
+    return ascii;
 }
 
 function createSourceCodeMinimapPng(sourceCode: string): Buffer {
@@ -333,6 +336,10 @@ function createSourceCodeMinimapPng(sourceCode: string): Buffer {
         height: IMAGE_HEIGHT
     });
 
+    // O dataset de treino foi gerado com padding de 8 pixels em cima e à esquerda.
+    // O código começa no pixel (8, 8), não no (0, 0).
+    const PADDING = 8;
+
     const normalizedSourceCode = sourceCode
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n');
@@ -340,21 +347,31 @@ function createSourceCodeMinimapPng(sourceCode: string): Buffer {
     const sourceLines = normalizedSourceCode.split('\n');
 
     for (let row = 0; row < IMAGE_HEIGHT; row++) {
-        const sourceLine = sourceLines[row] ?? '';
-
         for (let column = 0; column < IMAGE_WIDTH; column++) {
-            const character = sourceLine[column];
+            const pixelIndex = (row * IMAGE_WIDTH + column) * 4;
+
+            // Área de padding → preto
+            if (row < PADDING || column < PADDING) {
+                png.data[pixelIndex]     = 0;
+                png.data[pixelIndex + 1] = 0;
+                png.data[pixelIndex + 2] = 0;
+                png.data[pixelIndex + 3] = 255;
+                continue;
+            }
+
+            const sourceRow = row - PADDING;
+            const sourceCol = column - PADDING;
+            const sourceLine = sourceLines[sourceRow] ?? '';
+            const character = sourceLine[sourceCol];
 
             const pixelIntensity = character === undefined
                 ? 0
                 : convertCharacterToPixelIntensity(character);
 
-            const pixelIndex = (row * IMAGE_WIDTH + column) * 4;
-
-            png.data[pixelIndex] = pixelIntensity;       // R
-            png.data[pixelIndex + 1] = pixelIntensity;   // G
-            png.data[pixelIndex + 2] = pixelIntensity;   // B
-            png.data[pixelIndex + 3] = 255;              // Alpha
+            png.data[pixelIndex]     = pixelIntensity; // R
+            png.data[pixelIndex + 1] = pixelIntensity; // G
+            png.data[pixelIndex + 2] = pixelIntensity; // B
+            png.data[pixelIndex + 3] = 255;            // Alpha
         }
     }
 

@@ -1,71 +1,51 @@
-# sourcecodeminimapsplugin README
+# SourceCodeMinimaps — VS Code Extension
 
-This is the README for your extension "sourcecodeminimapsplugin". After writing up a brief description, we recommend including the following sections.
+VS Code extension for the MinimapSignatures ecosystem
+(https://github.com/minimap-project). It renders the active source file as a
+128x128 grayscale minimap, sends it to the analysis backend, and shows the
+predicted programming language, project, and author in a side panel.
 
-## Features
+## How it works
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+1. Reads the active file and renders a 128x128 grayscale minimap, mapping each
+   character to a pixel intensity (the same encoding used to train the model).
+2. Encodes the image as a base64 PNG and computes an MD5 hash of the file path.
+3. Sends a POST request to the backend and displays the ranked predictions in a
+   webview panel.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Node.js and npm.
+- A running analysis backend. Start the `back-end-pytorch` service first; by
+  default this extension calls `http://localhost:8000/api/v1/analyze/image`.
 
-## Extension Settings
+## Setup
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+```bash
+npm install
+npm run compile
+```
 
-For example:
+## Running in development
 
-This extension contributes the following settings:
+1. Make sure the backend is running on `http://localhost:8000`.
+2. Open this folder in VS Code and press `F5` to launch the Extension
+   Development Host.
+3. In the new window, open and save a source file.
+4. Open the Command Palette and run `SourceCodeMinimaps: Analyze Current File`.
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+The result panel opens beside the editor with one card per target
+(type, project, author, quality).
 
-## Known Issues
+## Configuration
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+The backend URL and API key are defined as constants at the top of
+`src/extension.ts` (`ENDPOINT` and `API_KEY`). Change `ENDPOINT` if your backend
+runs on a different host or port. After editing, run `npm run compile` (or keep
+`npm run watch` running) so `out/extension.js` is regenerated.
 
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+During development the extension also saves each generated minimap under a
+`sourcecodeminimaps/` folder in the open workspace, which is useful for
+inspecting exactly what is sent to the backend. Set
+`SAVE_MINIMAP_IMAGES_FOR_DEVELOPMENT` to `false` in `src/extension.ts` to
+disable this.
