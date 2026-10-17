@@ -10,14 +10,29 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:sourcecodeminimapsplugin.analyzeCurrentFile"
+    "onCommand:sourcecodeminimapsplugin.chooseAnalysis",
+    "onCommand:sourcecodeminimapsplugin.analyzeCurrentFile",
+    "onCommand:sourcecodeminimapsplugin.analyzeDirectory",
+    "onCommand:sourcecodeminimapsplugin.analyzeProjectAverage"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "sourcecodeminimapsplugin.chooseAnalysis",
+        "title": "SourceCodeMinimaps: Select Analysis Strategy..."
+      },
+      {
         "command": "sourcecodeminimapsplugin.analyzeCurrentFile",
         "title": "SourceCodeMinimaps: Analyze Current File"
+      },
+      {
+        "command": "sourcecodeminimapsplugin.analyzeDirectory",
+        "title": "SourceCodeMinimaps: Analyze Directory (Individual)"
+      },
+      {
+        "command": "sourcecodeminimapsplugin.analyzeProjectAverage",
+        "title": "SourceCodeMinimaps: Analyze Project (Average Minimap)"
       }
     ]
   },
